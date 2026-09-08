@@ -1,0 +1,23 @@
+name: Reject PRs to main
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Only local develop may target main
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check the source branch
+        if: >-
+          github.event.pull_request.head.ref != 'develop' ||
+          github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          echo 'Open feature pull requests against develop, not main.'
+          exit 1
