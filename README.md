@@ -1,128 +1,109 @@
 # thessla-green-modbus
 
-Asynchronous, transport-independent Python library for **Thessla Green AirPack4** ventilation units.
+Asynchronous, transport-independent Python library for **Thessla Green** ventilation units using Modbus.
 
-The caller supplies a `modbus_connection.ModbusUnit`. This package owns the device's register map, typed components, physical-unit decoding and validated commands. It does not own a socket, a serial port, a polling loop or a connection lifecycle.
+The caller supplies a `modbus_connection.ModbusUnit`. This package owns the verified register map, typed components, physical-unit decoding and validated commands. It does not own a socket, serial port, polling loop or connection lifecycle.
 
-**Status: alpha, protocol/mock tested; not yet verified on physical hardware.** Do not treat CI as evidence that every firmware revision has been tested.
+**Status: alpha, protocol/mock tested; not yet verified on physical hardware.** The current common map has been cross-checked against manufacturer protocols for Home-family and series-4 controllers. Other Modbus-capable Thessla Green families are represented explicitly and should use the conservative common map until their complete register table is verified.
 
 ## Installation
-
-Python 3.12 or newer is required:
 
 ```sh
 python -m pip install thessla-green-modbus
 ```
 
-For development from a checkout of the `develop` branch:
-
-```sh
-python -m venv .venv
-# Linux/macOS: source .venv/bin/activate
-# Windows: .venv\Scripts\activate
-python -m pip install -e '.[dev,cli]'
-```
-
-The base package depends only on `modbus-connection>=4.8.1,<5`. The optional `cli` extra adds the `tmodbus` backend. An application that already supplies a unit does not need a backend extra from this package.
+Python 3.12 or newer is required.
 
 ## Device API
 
 ```python
 from modbus_connection import ModbusUnit
-from thessla_green_modbus import AirPack4, OperatingMode, SpecialMode
+from thessla_green_modbus import (
+    DeviceFamily,
+    OperatingMode,
+    ThesslaGreenDevice,
+)
 
 
 async def use_device(unit: ModbusUnit) -> None:
-    device = AirPack4(unit)  # No I/O during construction.
+    device = ThesslaGreenDevice(unit, family=DeviceFamily.HOME_V)
     await device.async_update()
 
     print(device.info.serial_number)
     print(device.info.firmware_version)
-    print(device.temperatures.outside)  # Celsius; None for a missing sensor.
-    print(device.ventilation.supply_flow)  # Measured cubic metres per hour.
+    print(device.temperatures.outside)
+    print(device.ventilation.supply_flow)
 
-    # The application must deliberately choose to change these settings.
     await device.controls.write("manual_speed", 50)
     await device.controls.write("operating_mode", OperatingMode.MANUAL)
-    await device.controls.write("special_mode", SpecialMode.NONE)
-    await device.async_update()  # Read actual state; no optimistic cache updates.
+    await device.async_update()
 ```
 
-`async_update()` pools reads across the selected components. `async_read_raw(notify=False)` returns a diagnostic dictionary keyed by address space and address. Each component can also be updated separately and supports `add_update_listener(callback)`, returning an unsubscribe function.
+Construction performs no I/O. Reading attributes performs no I/O. Transport errors and cancellation propagate to the caller, and cached values are not presented as a successful new reading after a failed refresh.
 
-Reading attributes never performs I/O. Transport errors, Modbus exception responses and cancellation propagate to the caller. The last successful values remain cached after an I/O failure; applications must track refresh success and must not present cached data as a successful new reading. Do not run overlapping refresh loops for the same device object.
+### Product families
 
-### Components
+`DeviceFamily` currently identifies these manufacturer product families:
 
-| Attribute | Data or controls |
-| --- | --- |
-| `info` | Controller serial number and firmware version |
-| `temperatures` | Outside, supply, extract, after-FPX and ambient temperatures |
-| `ventilation` | Measured supply/extract airflow and fan-power relay |
-| `controls` | On/off, operating mode, season, manual/temporary speed, special mode |
-| `bypass` | Actuator output, disable flag and current thermal function |
-| `alarms` | Warning/error, FPX, fan, flow-sensor and filter alarms |
-| `constant_flow` | Optional setpoints and dynamic percentage limits |
-| `comfort` | Optional ECO/COMFORT and supply temperature settings |
-| `erv` | Optional ERV post-heater state and mode |
-| `legacy_filter_alarm` | Explicit opt-in for community register 8444 |
+- `HOME_H`
+- `HOME_V`
+- `HOME_F`
+- `SERIES_4_H`
+- `SERIES_4_V`
+- `AIRPACK_F`
+- `UNKNOWN`
 
-Optional components are **not probed automatically**:
+The family is metadata and a future compatibility hook. It deliberately does **not** turn optional register ranges on automatically. `UNKNOWN` exists so a new or unlisted Thessla Green model is not rejected merely because the package predates it.
+
+### Optional capabilities
 
 ```python
-from thessla_green_modbus import AirPack4, DeviceOptions
+from thessla_green_modbus import DeviceOptions, ThesslaGreenDevice
 
-device = AirPack4(unit, options=DeviceOptions(comfort=True, erv=True))
+device = ThesslaGreenDevice(
+    unit,
+    options=DeviceOptions(
+        constant_flow=True,
+        comfort=True,
+        erv=True,
+        pressure_filter_alarm=True,
+    ),
+)
 ```
 
-Only enable capabilities supported by the actual unit. ERV registers are documented from firmware 4.85. The baseline map includes firmware patch register 4 (documented from 4.82). This is an AirPack4 map, not a claim of compatibility with older AirPack controller generations.
+Only enable capabilities supported by the actual controller. The pressure-switch filter alarm at 8444 is documented for relevant Home-family hardware but is not present in the reviewed series-4 table.
 
-Applications can inspect `device.components` and each component's `resolved_fields`. Descriptors carry units, enum converters, writable flags and validators. A `NumberRange` validator exposes `minimum`, `maximum` and `step` in physical units. To omit a known-unsupported register, call a component's `restrict_fields([...])`; the pooled plan is rebuilt and excluded fields become unavailable and unwritable.
+### Safety and protocol details
 
-### Important protocol details
+Requests never exceed the manufacturer's 16-register limit and never read across undeclared holes. Input, holding and coil spaces remain separate.
 
-Requests never exceed the manufacturer's **16-register limit**. Only declared adjacent addresses are pooled; reserved gaps are not read. Input registers, holding registers and coils remain separate address spaces.
+Temperatures use signed 16-bit tenths and `0x8000` as unavailable. Measured airflow uses `0xffff` as unavailable. Unknown enum/boolean values decode to `None`.
 
-Temperatures use signed 16-bit tenths and the `0x8000` unavailable sentinel. Measured airflow uses unsigned words and the `0xffff` failure sentinel. These values become `None`, not implausible readings. Unknown enum/boolean register values also become `None`.
+All public writes validate before I/O. The manual comfort temperature follows the manufacturer range **20–90 °C** in 0.5 °C steps. Temporary airflow and temporary temperature registers are intentionally **read-only** in this release: manufacturer protocols require atomic three-register activation commands at 4400–4402 and 4403–4405, so a single-register write would be incomplete.
 
-Special functions all share holding register **4224**: airing, fireplace, open windows and empty house are mutually exclusive modes, not independent switches. Writing `manual_speed` does not change the operating mode. `bypass.disabled=False` permits automatic bypass operation; it does not force the damper open. Coil **11** means fan power, while the distinct run-confirmation output is coil **10**.
+Special functions share holding register 4224 and are represented as one mutually exclusive enum. `bypass.disabled=False` permits automatic bypass operation; it does not force the damper open.
 
-The manufacturer's map lists a duct-filter alarm at **8443**. The community example uses **8444**, which is not documented in that map. The latter is isolated behind `DeviceOptions(legacy_filter_alarm=True)` and is off by default. See [protocol provenance and scope](docs/protocol.md).
-
-All public writes validate before I/O. Out-of-range values, fractions incompatible with a field's step, strings, NaN/infinity, unknown enum codes and non-boolean switch inputs are rejected. Single-register writes use FC06. No automatic alarm reset, factory reset, calibration, access-level change or device unlock is performed.
+See [protocol provenance and compatibility scope](docs/protocol.md).
 
 ## Read-only query tool
 
-A transparent serial gateway normally needs RTU-over-TCP; a protocol-converting gateway needs socket framing. Match the gateway configuration rather than inferring framing from a TCP port number.
-
 ```sh
-# Transparent RTU-over-TCP gateway:
 python script/query.py 192.168.1.179 --port 9999 --unit 10 --framer rtu
-
-# Modbus TCP gateway:
 python script/query.py 192.168.1.179 --port 502 --unit 10 --framer socket
-
-# Serial RTU; documented factory defaults are 9600, 8N1, unit 10:
 python script/query.py /dev/ttyUSB0 --transport serial --unit 10
-
-# Offline demonstration using synthetic values, no backend or hardware needed:
-python script/query.py unused --snapshot tests/fixtures/airpack4.json
+python script/query.py unused --snapshot tests/fixtures/thessla_green.json
 ```
 
-The CLI never writes. It owns and closes only its own connection. A supplied library `ModbusUnit` remains owned by the calling application.
+The CLI never writes.
 
 ## Development
 
 ```sh
 python -m pip install -e '.[dev]'
 bash script/run_checks.sh
-# Apply formatting explicitly:
-bash script/format_code.sh
 ```
 
-CI checks formatting, lint, strict typing, tests with branch coverage, distribution metadata and importing the installed wheel outside the checkout. Tests run on Python 3.12, 3.13 and 3.14, including the minimum supported connection-library version. The coverage gate is 95%; hardware compatibility is not a coverage metric.
-
-Changes target `develop`; only local `develop` may open a release PR into `main`. Releases are tag-driven: after a green `main` build, push a tag matching the package version (for example `0.1.0a2`). The release workflow validates the tag and commit, publishes to PyPI using Trusted Publishing, and then creates the GitHub Release. See [release setup](docs/releasing.md).
+Changes target `develop`. Releases are tag-driven after a green merge to `main`; the tag must match the package version exactly.
 
 ## License
 

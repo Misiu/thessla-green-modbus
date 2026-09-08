@@ -10,7 +10,7 @@ from modbus_connection.mock import MockModbusUnit
 @pytest.fixture
 def unit(mock_modbus_unit: MockModbusUnit) -> MockModbusUnit:
     data = json.loads(
-        (Path(__file__).parent / "fixtures" / "airpack4.json").read_text()
+        (Path(__file__).parent / "fixtures" / "thessla_green.json").read_text()
     )
     mock_modbus_unit.load_raw(
         {

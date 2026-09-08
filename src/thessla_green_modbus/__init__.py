@@ -1,6 +1,6 @@
-"""Asynchronous, backend-independent Thessla Green AirPack4 device library."""
+"""Asynchronous, backend-independent Thessla Green Modbus device library."""
 
-from .device import AirPack4, DeviceOptions
+from .device import DeviceOptions, ThesslaGreenDevice
 from .enums import (
     ComfortMode,
     ErvMode,
@@ -10,11 +10,12 @@ from .enums import (
     SpecialMode,
     ThermalState,
 )
+from .profiles import DeviceFamily
 from .validation import EnumValues, NumberRange
 
 __all__ = [
-    "AirPack4",
     "ComfortMode",
+    "DeviceFamily",
     "DeviceOptions",
     "EnumValues",
     "ErvMode",
@@ -24,4 +25,5 @@ __all__ = [
     "Season",
     "SpecialMode",
     "ThermalState",
+    "ThesslaGreenDevice",
 ]
