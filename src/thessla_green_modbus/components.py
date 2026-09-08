@@ -124,7 +124,7 @@ class Comfort(ThesslaGreenComponent):
 
     mode = enum(4304, ComfortMode, writable=EnumValues(ComfortMode))
     state = enum(4305, ThermalState)
-    manual_temperature = gauge(4212, 0.5, unit="°C", writable=NumberRange(20, 90, 0.5))
+    manual_temperature = gauge(4212, 0.5, unit="°C", writable=NumberRange(10, 45, 0.5))
     # Like temporary_speed, 4213 is read-only here because activation requires
     # an atomic command at 4403..4405 in the manufacturer protocol.
     temporary_temperature = gauge(4213, 0.5, unit="°C")
