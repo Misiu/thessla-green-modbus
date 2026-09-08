@@ -1,48 +1,38 @@
-# Protocol provenance and implementation scope
+# Protocol provenance and compatibility scope
 
-The primary reference is the manufacturer's **MODBUS_USER_AirPack_4_08.2022.01** register table, titled *Protokol Modbus RTU*. A public mirror is available at:
+The library targets Thessla Green ventilation controllers using documented Modbus interfaces rather than one chassis model.
 
-https://github.com/voyo/ThesslaGreen-modbus/blob/main/ProtokolModbusRTU_AirPack4.pdf
+Primary manufacturer references reviewed for the common register map:
 
-SHA-256 of the reviewed PDF:
+- Home-family protocol: https://thesslagreen.com/wp-content/uploads/MODBUS_USER_AirPack_Home_08.2021.01.pdf
+- Series-4 protocol: https://thesslagreen.com/wp-content/uploads/MODBUS_USER_AirPack_4_10.2022.01.pdf
+- Current product/documentation catalogue: https://thesslagreen.com/products/rekuperatory/
 
-```text
-fe883682372761e64eaa9357ca1a328f0c1dd06baf1283070c93a27da3407bc8
-```
+The Home protocol covers the Home h, Home v and Home f product families. The series-4 protocol covers the corresponding h/v generation. The manufacturer's large-f product page also publishes a Modbus RTU protocol; its complete table must be compared before family-specific extensions are enabled by default.
 
-The PDF is not redistributed in this package. Relevant pages are 2 (connection parameters, coils and request limit), 4 (input registers, serial format and temperature sentinel), 10 (measured flow and its failure sentinel), 11-13 (user commands), 15 (ERV), and 16-17 (alarms).
+## Verified common behaviour
 
-Secondary cross-checks:
+The reviewed Home and series-4 tables align on the core areas used by this package, including firmware/controller identity, temperatures, measured airflow, user mode/season/manual speed, special mode, bypass, enable state and the principal alarm ranges. Both impose a maximum of 16 simultaneously accessed registers and document factory serial defaults of 9600 8/N/1 with unit address 10.
 
-- Community register configuration: https://bartekbuduje.pl/rekuperator-thessla-green-polaczenie-z-home-assistant/
-- Existing implementation: https://github.com/aLAN-LDZ/ThesslaGreen_HA
-- Component and repository structure reference: https://github.com/Tom-Bom-badil/trovis-modbus/
-- Modelling framework source: https://github.com/home-assistant-libs/modbus-connection/
+Important interpretations:
 
-The source code was independently implemented against the device table and the public modelling API. Community configuration is a cross-check, not authority for undocumented writes.
-
-## Corrections relative to the community configuration
-
-| Topic | Implemented interpretation |
+| Topic | Implementation |
 | --- | --- |
 | Input 16-19, 22 | Signed tenths of Celsius; raw 32768 is unavailable |
 | Holding 256-257 | Unsigned measured flow; 65535 is unavailable |
-| Coil 11 | Fan-power relay, not the distinct coil-10 run-confirmation output |
+| Coil 11 | Fan-power relay, distinct from run-confirmation coil 10 |
 | Holding 4224 | One enumerated special mode, not independent switches |
 | Holding 4320 | Bypass disable flag; zero permits automatic operation |
-| Holding 4212-4213 | Half-degree physical values, 10-45 degrees Celsius |
-| Holding 8443/8444 | 8443 is documented duct-filter replacement; 8444 is an opt-in, unverified extension |
-
-The supplied YAML's device reads and commands are represented, with 8444 deliberately opt-in. Optional comfort and ERV controls from the secondary project are also represented. Mathematical energy estimates, UI templates and time accumulation are application responsibilities, not registers or measured device energy. No nominal airflow such as 320 m3/h is hardcoded.
+| Holding 4212 | Manual comfort setpoint, 0.5 °C scale, 20–90 °C |
+| Holding 4211/4213 | Readable temporary setpoints; not directly writable here |
+| Holding 4400-4405 | Atomic temporary-mode command blocks required by the manufacturer |
+| Holding 8443 | Duct-filter replacement alarm in both reviewed generations |
+| Holding 8444 | Pressure-switch filter alarm documented for relevant Home hardware, absent from reviewed series-4 table |
 
 ## Scope boundaries
 
-This initial library models operational readings, user commands and selected diagnostics for AirPack4. It does **not** implement every register in the 17-page manual: weekly schedules, the controller clock, factory/installer calibration, access levels, product unlocking, filter-reset commands and extended Expansion/GWC controls are outside this release. Unsupported registers are not silently scanned or written. Future extensions should add dedicated components and independently verified register fixtures.
+The default device uses only the conservative register set verified across the reviewed generations. Optional Constant Flow, comfort, ERV and pressure-filter ranges require explicit opt-in and are never discovered by scanning reserved addresses.
 
-No hardware test has been performed for this release. Before deployment, verify controller firmware, serial identity, readings and individual commands against the local panel. Do not infer a chassis model or serial from network addresses. The six-byte controller serial is available when the device reports a valid value; an unknown serial remains None rather than becoming a fabricated identity.
+The `DeviceFamily` value is metadata, not proof of a capability. `UNKNOWN` is intentionally supported so future or unlisted Thessla Green models can use the common map without pretending their optional hardware has been identified.
 
-## Framework choices
-
-The reviewed framework includes integer and scaled fields, enums, booleans, flags, packed bits, raw registers, strings, multiword numeric/network fields and repeating component groups. This device map needs integer, gauge, enum, boolean and coil descriptors. The one custom descriptor is the serial: the table specifies six one-byte register values, which is not a standard packed three-register MAC address.
-
-The application supplies `ModbusUnit`. No private framework attributes are modified and no backend client is imported by the library. Public components, descriptors, field restriction, pooled reads and update listeners are used directly.
+No hardware test has yet been performed. Before deployment, verify firmware, controller serial, readings and each write against the local controller. Weekly schedules, controller clock, factory/installer calibration, access levels, product unlocking, filter reset and extended expansion controls remain outside this release.

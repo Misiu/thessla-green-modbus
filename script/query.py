@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only standalone query tool. No write command is intentionally provided."""
+"""Read-only standalone Thessla Green query tool."""
 
 import argparse
 import asyncio
@@ -10,7 +10,7 @@ from modbus_connection import ModbusError
 from modbus_connection.cli_helper import add_connection_args, connect_from_args
 from modbus_connection.mock import MockModbusConnection
 
-from thessla_green_modbus import AirPack4, DeviceOptions
+from thessla_green_modbus import DeviceOptions, ThesslaGreenDevice
 
 
 async def query(args: argparse.Namespace, snapshot: dict | None) -> None:
@@ -28,13 +28,13 @@ async def query(args: argparse.Namespace, snapshot: dict | None) -> None:
             }
         )
     try:
-        device = AirPack4(
+        device = ThesslaGreenDevice(
             unit,
             options=DeviceOptions(
                 constant_flow=args.constant_flow,
                 comfort=args.comfort,
                 erv=args.erv,
-                legacy_filter_alarm=args.legacy_filter_alarm,
+                pressure_filter_alarm=args.pressure_filter_alarm,
             ),
         )
         await device.async_update()
@@ -64,7 +64,7 @@ def main() -> None:
     parser.add_argument("--constant-flow", action="store_true")
     parser.add_argument("--comfort", action="store_true")
     parser.add_argument("--erv", action="store_true")
-    parser.add_argument("--legacy-filter-alarm", action="store_true")
+    parser.add_argument("--pressure-filter-alarm", action="store_true")
     args = parser.parse_args()
     if not 1 <= args.unit <= 247:
         parser.error("The RTU unit address must be between 1 and 247")

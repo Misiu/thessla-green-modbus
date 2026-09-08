@@ -1,4 +1,4 @@
-"""Assemble a device from components without owning its transport."""
+"""Assemble a Thessla Green device without owning its transport."""
 
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -8,7 +8,6 @@ from modbus_connection import ModbusUnit
 from modbus_connection.model import ComponentGroup
 
 from .components import (
-    AirPackComponent,
     Alarms,
     Bypass,
     Comfort,
@@ -16,10 +15,12 @@ from .components import (
     Controls,
     DeviceInformation,
     Erv,
-    LegacyFilterAlarm,
+    PressureFilterAlarm,
     Temperatures,
+    ThesslaGreenComponent,
     Ventilation,
 )
+from .profiles import DeviceFamily
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,7 +30,7 @@ class DeviceOptions:
     constant_flow: bool = False
     comfort: bool = False
     erv: bool = False
-    legacy_filter_alarm: bool = False
+    pressure_filter_alarm: bool = False
 
     def __post_init__(self) -> None:
         if any(
@@ -38,23 +39,34 @@ class DeviceOptions:
                 self.constant_flow,
                 self.comfort,
                 self.erv,
-                self.legacy_filter_alarm,
+                self.pressure_filter_alarm,
             )
         ):
             raise ValueError("Capability flags must be booleans")
 
 
-class AirPack4(ComponentGroup):
-    """AirPack4 registers accessed through a caller-supplied ModbusUnit.
+class ThesslaGreenDevice(ComponentGroup):
+    """Thessla Green registers accessed through a caller-supplied ModbusUnit.
+
+    The default component set is the conservative map verified against multiple
+    manufacturer protocol generations. ``family`` records product metadata for
+    applications and future profile-specific extensions; it does not implicitly
+    enable optional register ranges.
 
     Construction performs no I/O. The caller owns connection lifetime, polling,
-    timeouts and retries. async_update() and async_read_raw() pool component
-    reads through modbus-connection. Transport errors and cancellation propagate.
+    timeouts and retries. Transport errors and cancellation propagate.
     """
 
     def __init__(
-        self, unit: ModbusUnit, *, options: DeviceOptions | None = None
+        self,
+        unit: ModbusUnit,
+        *,
+        family: DeviceFamily = DeviceFamily.UNKNOWN,
+        options: DeviceOptions | None = None,
     ) -> None:
+        if not isinstance(family, DeviceFamily):
+            raise ValueError("family must be a DeviceFamily")
+        self.family = family
         self.options = options if options is not None else DeviceOptions()
         self.info = DeviceInformation(unit)
         self.temperatures = Temperatures(unit)
@@ -65,10 +77,10 @@ class AirPack4(ComponentGroup):
         self.constant_flow = ConstantFlow(unit) if self.options.constant_flow else None
         self.comfort = Comfort(unit) if self.options.comfort else None
         self.erv = Erv(unit) if self.options.erv else None
-        self.legacy_filter_alarm = (
-            LegacyFilterAlarm(unit) if self.options.legacy_filter_alarm else None
+        self.pressure_filter_alarm = (
+            PressureFilterAlarm(unit) if self.options.pressure_filter_alarm else None
         )
-        members: dict[str, AirPackComponent] = {
+        members: dict[str, ThesslaGreenComponent] = {
             "info": self.info,
             "temperatures": self.temperatures,
             "ventilation": self.ventilation,
@@ -80,9 +92,9 @@ class AirPack4(ComponentGroup):
             ("constant_flow", self.constant_flow),
             ("comfort", self.comfort),
             ("erv", self.erv),
-            ("legacy_filter_alarm", self.legacy_filter_alarm),
+            ("pressure_filter_alarm", self.pressure_filter_alarm),
         ):
             if component is not None:
                 members[name] = component
-        self.components: Mapping[str, AirPackComponent] = MappingProxyType(members)
+        self.components: Mapping[str, ThesslaGreenComponent] = MappingProxyType(members)
         super().__init__(unit, members.values())
