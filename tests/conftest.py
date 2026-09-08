@@ -3,8 +3,8 @@
 import json
 from pathlib import Path
 
-from modbus_connection.mock import MockModbusUnit
 import pytest
+from modbus_connection.mock import MockModbusUnit
 
 
 @pytest.fixture
