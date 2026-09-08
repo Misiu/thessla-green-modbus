@@ -34,8 +34,9 @@ from thessla_green_modbus import (
         ("bypass", "disabled", True, 4320, 1),
         ("bypass", "disabled", False, 4320, 0),
         ("comfort", "mode", ComfortMode.COMFORT, 4304, 1),
+        ("comfort", "manual_temperature", 10, 4212, 20),
         ("comfort", "manual_temperature", 21.5, 4212, 43),
-        ("comfort", "manual_temperature", 90, 4212, 180),
+        ("comfort", "manual_temperature", 45, 4212, 90),
         ("erv", "mode", ErvMode.MODE_2, 4711, 2),
     ],
 )
@@ -103,7 +104,7 @@ async def test_boolean_write_is_strict(unit: MockModbusUnit, value: object) -> N
     assert unit.holding[4387] == 1
 
 
-@pytest.mark.parametrize("value", [19.5, 90.5, 21.25, True, math.nan, math.inf])
+@pytest.mark.parametrize("value", [9.5, 45.5, 21.25, True, math.nan, math.inf])
 async def test_invalid_temperature(unit: MockModbusUnit, value: object) -> None:
     device = ThesslaGreenDevice(unit, options=DeviceOptions(comfort=True))
     assert device.comfort is not None
