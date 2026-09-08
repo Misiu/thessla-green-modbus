@@ -1,0 +1,29 @@
+name: Bootstrap verification environment
+on:
+  push:
+    branches: [develop]
+    paths: [.github/workflows/bootstrap.yml]
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Download test tools and the released protocol library
+        run: |
+          mkdir -p verification/wheels verification/reference
+          python -m pip download --only-binary=:all: --dest verification/wheels 'modbus-connection==4.8.1' ruff mypy build hatchling twine pytest pytest-asyncio pytest-cov pyyaml pre-commit
+          curl --fail --location --retry 3 https://codeload.github.com/Tom-Bom-badil/trovis-modbus/zip/refs/heads/main -o verification/reference/trovis.zip
+          curl --fail --location --retry 3 https://codeload.github.com/home-assistant-libs/modbus-connection/zip/refs/heads/main -o verification/reference/connection.zip
+          curl --fail --location --retry 3 https://codeload.github.com/aLAN-LDZ/ThesslaGreen_HA/zip/refs/heads/main -o verification/reference/thessla.zip
+          curl --fail --location --retry 3 https://raw.githubusercontent.com/home-assistant/core/dev/homeassistant/components/modbus/__init__.py -o verification/reference/core_modbus.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verification-environment
+          path: verification/
+          retention-days: 1
+          if-no-files-found: error
