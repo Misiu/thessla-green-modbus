@@ -4,11 +4,17 @@ Asynchronous, transport-independent Python library for **Thessla Green AirPack4*
 
 The caller supplies a `modbus_connection.ModbusUnit`. This package owns the device's register map, typed components, physical-unit decoding and validated commands. It does not own a socket, a serial port, a polling loop or a connection lifecycle.
 
-**Status: alpha, protocol/mock tested; not yet verified on physical hardware.** The package is not published on PyPI yet. Do not treat CI as evidence that every firmware revision has been tested.
+**Status: alpha, protocol/mock tested; not yet verified on physical hardware.** Do not treat CI as evidence that every firmware revision has been tested.
 
 ## Installation
 
-Python 3.12 or newer is required. From a checkout of the `develop` branch:
+Python 3.12 or newer is required:
+
+```sh
+python -m pip install thessla-green-modbus
+```
+
+For development from a checkout of the `develop` branch:
 
 ```sh
 python -m venv .venv
@@ -24,6 +30,7 @@ The base package depends only on `modbus-connection>=4.8.1,<5`. The optional `cl
 ```python
 from modbus_connection import ModbusUnit
 from thessla_green_modbus import AirPack4, OperatingMode, SpecialMode
+
 
 async def use_device(unit: ModbusUnit) -> None:
     device = AirPack4(unit)  # No I/O during construction.
@@ -115,7 +122,7 @@ bash script/format_code.sh
 
 CI checks formatting, lint, strict typing, tests with branch coverage, distribution metadata and importing the installed wheel outside the checkout. Tests run on Python 3.12, 3.13 and 3.14, including the minimum supported connection-library version. The coverage gate is 95%; hardware compatibility is not a coverage metric.
 
-Changes target `develop`; only local `develop` may open a release PR into `main`. Publishing is release-triggered and uses PyPI Trusted Publishing, not a long-lived API token. See [release setup](docs/releasing.md). Creating a GitHub release before configuring the publisher will not publish a package successfully.
+Changes target `develop`; only local `develop` may open a release PR into `main`. Releases are tag-driven: after a green `main` build, push a tag matching the package version (for example `0.1.0a2`). The release workflow validates the tag and commit, publishes to PyPI using Trusted Publishing, and then creates the GitHub Release. See [release setup](docs/releasing.md).
 
 ## License
 
