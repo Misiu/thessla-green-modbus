@@ -13,9 +13,7 @@ class SerialNumberField(RegisterField[str]):
     def __init__(self, address: int) -> None:
         super().__init__(address, count=6)
 
-    def decode(
-        self, words: list[int], scale_exponent: int | None = None
-    ) -> str | None:
+    def decode(self, words: list[int], scale_exponent: int | None = None) -> str | None:
         if (
             len(words) != 6
             or any(not 0 <= word <= 255 for word in words)

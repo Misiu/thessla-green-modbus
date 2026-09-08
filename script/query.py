@@ -58,7 +58,9 @@ def main() -> None:
     )
     parser.set_defaults(framer="rtu")
     parser.add_argument("--unit", type=int, default=10)
-    parser.add_argument("--snapshot", type=Path, help="Read synthetic JSON, not hardware")
+    parser.add_argument(
+        "--snapshot", type=Path, help="Read synthetic JSON, not hardware"
+    )
     parser.add_argument("--constant-flow", action="store_true")
     parser.add_argument("--comfort", action="store_true")
     parser.add_argument("--erv", action="store_true")

@@ -57,8 +57,10 @@ async def test_optional_components(unit: MockModbusUnit) -> None:
 async def test_default_does_not_probe_optional_registers(unit: MockModbusUnit) -> None:
     device = AirPack4(unit)
     for address in (4304, 4305, 4704, 4711, 8444):
-        unit.fail_read(address, IllegalDataAddressError("Unsupported"))
-    unit.fail_read(271, IllegalDataAddressError("Unsupported"), register_type="input")
+        unit.fail_read(address, IllegalDataAddressError(message="Unsupported"))
+    unit.fail_read(
+        271, IllegalDataAddressError(message="Unsupported"), register_type="input"
+    )
     await device.async_update()
     assert device.erv is None
     assert device.comfort is None
@@ -158,9 +160,14 @@ async def test_failed_poll_keeps_previous_snapshot_without_notifying(
 
 async def test_illegal_address_propagates_then_recovers(unit: MockModbusUnit) -> None:
     device = AirPack4(unit)
-    unit.fail_read(17, IllegalDataAddressError("Unavailable"), register_type="input")
-    with pytest.raises(IllegalDataAddressError):
+    unit.fail_read(
+        17, IllegalDataAddressError(message="Unavailable"), register_type="input"
+    )
+    with pytest.raises(IllegalDataAddressError) as raised:
         await device.async_update()
+    assert raised.value.exception_code == 2
+    assert raised.value.block is not None
+    assert raised.value.block.space == "input"
     unit.fail_read(17, None, register_type="input")
     await device.async_update()
     assert device.temperatures.supply == 20.5

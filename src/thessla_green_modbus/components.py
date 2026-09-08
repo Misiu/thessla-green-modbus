@@ -79,9 +79,7 @@ class Controls(AirPackComponent):
 
     operating_mode = enum(4208, OperatingMode, writable=EnumValues(OperatingMode))
     season = enum(4209, Season, writable=EnumValues(Season))
-    manual_speed = integer(
-        4210, signed=False, unit="%", writable=NumberRange(10, 100)
-    )
+    manual_speed = integer(4210, signed=False, unit="%", writable=NumberRange(10, 100))
     temporary_speed = integer(
         4211, signed=False, unit="%", writable=NumberRange(10, 100)
     )
