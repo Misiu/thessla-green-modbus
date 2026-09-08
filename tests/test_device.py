@@ -3,9 +3,9 @@
 import asyncio
 from unittest.mock import AsyncMock, Mock
 
+import pytest
 from modbus_connection import IllegalDataAddressError, ModbusConnectionError
 from modbus_connection.mock import MockModbusConnection, MockModbusUnit
-import pytest
 
 from thessla_green_modbus import (
     DeviceFamily,
