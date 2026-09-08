@@ -1,0 +1,76 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "thessla-green-modbus"
+version = "0.1.0a1"
+description = "Asynchronous, transport-independent Thessla Green AirPack4 device library."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+authors = [{ name = "Thessla Green Modbus contributors" }]
+keywords = ["modbus", "thessla-green", "airpack", "ventilation"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Typing :: Typed",
+  "Framework :: AsyncIO",
+  "Topic :: System :: Hardware",
+]
+dependencies = ["modbus-connection>=4.8.1,<5"]
+
+[project.optional-dependencies]
+cli = ["modbus-connection[tmodbus]>=4.8.1,<5"]
+dev = [
+  "pytest>=8,<10",
+  "pytest-asyncio>=0.24,<2",
+  "pytest-cov>=6,<8",
+  "ruff==0.15.22",
+  "mypy>=1.19,<3",
+  "build>=1,<2",
+  "twine>=6,<8",
+]
+
+[project.urls]
+Homepage = "https://github.com/Misiu/thessla-green-modbus"
+Issues = "https://github.com/Misiu/thessla-green-modbus/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/thessla_green_modbus"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests", "/script", "/docs", "/README.md", "/LICENSE", "/CHANGELOG.md", "/pyproject.toml"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+addopts = "--strict-config --strict-markers"
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+branch = true
+source = ["thessla_green_modbus"]
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src"]
+strict = true
+
+[tool.ruff]
+target-version = "py312"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "ASYNC"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
