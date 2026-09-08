@@ -2,9 +2,9 @@
 
 import math
 
+import pytest
 from modbus_connection import ModbusConnectionError
 from modbus_connection.mock import MockModbusUnit, WriteEvent
-import pytest
 
 from thessla_green_modbus import (
     ComfortMode,
