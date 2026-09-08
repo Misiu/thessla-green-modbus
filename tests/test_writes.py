@@ -47,9 +47,7 @@ async def test_exact_write(
     address: int,
     encoded: int,
 ) -> None:
-    device = ThesslaGreenDevice(
-        unit, options=DeviceOptions(comfort=True, erv=True)
-    )
+    device = ThesslaGreenDevice(unit, options=DeviceOptions(comfort=True, erv=True))
     writes: list[WriteEvent] = []
     unit.on_write(writes.append)
     before = unit.holding.copy()
@@ -105,9 +103,7 @@ async def test_boolean_write_is_strict(unit: MockModbusUnit, value: object) -> N
     assert unit.holding[4387] == 1
 
 
-@pytest.mark.parametrize(
-    "value", [19.5, 90.5, 21.25, True, math.nan, math.inf]
-)
+@pytest.mark.parametrize("value", [19.5, 90.5, 21.25, True, math.nan, math.inf])
 async def test_invalid_temperature(unit: MockModbusUnit, value: object) -> None:
     device = ThesslaGreenDevice(unit, options=DeviceOptions(comfort=True))
     assert device.comfort is not None
