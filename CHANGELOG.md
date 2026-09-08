@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.1.0a1 - Unreleased
+## 0.1.0a2 - 2026-09-08
+
+- Replace the release-on-GitHub-Release workflow with a tag-driven release workflow.
+- Publish to PyPI automatically after validating the tag and green CI on `main`.
+- Create the GitHub Release automatically after a successful PyPI publication.
+
+## 0.1.0a1 - 2026-09-08
 
 - Add backend-independent asynchronous AirPack4 components and validated writes.
 - Respect the 16-register request limit and avoid undeclared address gaps.
