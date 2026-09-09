@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0a4 - 2026-09-09
+
+- Correct the Comfort manual temperature to the physical 10-45 °C range documented by Thessla Green (raw 20-90 with a 0.5 multiplier).
+- Keep the temporary airflow and temperature setpoints read-only because their activation requires atomic three-register commands.
+- Extend protocol provenance notes to the reviewed large-f protocol and clarify the model-dependent pressure-filter alarm.
+- Export `ThesslaGreenComponent` as part of the public API for integrations that need a stable component type.
+
 ## 0.1.0a3 - 2026-09-08
 
 - Generalize the public API from a single product generation to Thessla Green devices.

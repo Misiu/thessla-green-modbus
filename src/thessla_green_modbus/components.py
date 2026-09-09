@@ -1,9 +1,10 @@
 """Typed Thessla Green components; addresses are zero-based wire addresses.
 
-The common map is verified against manufacturer protocol tables for the Home and
-series-4 product generations. Optional ranges are never probed automatically.
-A writable descriptor always carries a validator. Service/calibration commands
-and alarm acknowledgement are deliberately not exposed as writes.
+The conservative common map is verified against manufacturer protocol tables for
+Home, series-4 and large-f product generations. Optional ranges are never probed
+automatically. A writable descriptor always carries a validator.
+Service/calibration commands and alarm acknowledgement are deliberately not
+exposed as writes.
 """
 
 from modbus_connection.model import Component, boolean, coil, enum, gauge, integer
@@ -140,9 +141,10 @@ class Erv(ThesslaGreenComponent):
 class PressureFilterAlarm(ThesslaGreenComponent):
     """Optional pressure-switch filter alarm at holding register 8444.
 
-    This register is documented for Home-family units equipped with the relevant
-    pressure switch, but is absent from the reviewed series-4 table. Applications
-    must therefore opt in only for hardware known to expose it.
+    This register is documented in the reviewed Home and large-f tables for
+    relevant pressure-switch hardware, but is absent from the reviewed series-4
+    table. Applications must therefore opt in only for hardware known to expose
+    it.
     """
 
     filter_due = boolean(8444)

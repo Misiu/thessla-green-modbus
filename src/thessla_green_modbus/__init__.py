@@ -1,5 +1,6 @@
 """Asynchronous, backend-independent Thessla Green Modbus device library."""
 
+from .components import ThesslaGreenComponent
 from .device import DeviceOptions, ThesslaGreenDevice
 from .enums import (
     ComfortMode,
@@ -25,5 +26,6 @@ __all__ = [
     "Season",
     "SpecialMode",
     "ThermalState",
+    "ThesslaGreenComponent",
     "ThesslaGreenDevice",
 ]
