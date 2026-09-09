@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "thessla-green-modbus"
-version = "0.1.0a3"
+version = "0.1.0a4"
 description = "Asynchronous, transport-independent Modbus library for Thessla Green ventilation units."
 readme = "README.md"
 requires-python = ">=3.12"

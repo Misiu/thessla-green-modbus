@@ -4,7 +4,7 @@ Asynchronous, transport-independent Python library for **Thessla Green** ventila
 
 The caller supplies a `modbus_connection.ModbusUnit`. This package owns the verified register map, typed components, physical-unit decoding and validated commands. It does not own a socket, serial port, polling loop or connection lifecycle.
 
-**Status: alpha, protocol/mock tested; not yet verified on physical hardware.** The current common map has been cross-checked against manufacturer protocols for Home-family and series-4 controllers. Other Modbus-capable Thessla Green families are represented explicitly and should use the conservative common map until their complete register table is verified.
+**Status: alpha, protocol/mock tested; not yet verified on physical hardware.** The conservative common map has been cross-checked against manufacturer protocols for Home-family, series-4 and large-f controllers. Optional registers remain explicit opt-ins because their presence still depends on controller family, firmware and installed hardware.
 
 ## Installation
 
@@ -71,7 +71,7 @@ device = ThesslaGreenDevice(
 )
 ```
 
-Only enable capabilities supported by the actual controller. The pressure-switch filter alarm at 8444 is documented for relevant Home-family hardware but is not present in the reviewed series-4 table.
+Only enable capabilities supported by the actual controller. The pressure-switch filter alarm at 8444 is documented for relevant Home and large-f hardware but is not present in the reviewed series-4 table.
 
 ### Safety and protocol details
 
@@ -79,7 +79,7 @@ Requests never exceed the manufacturer's 16-register limit and never read across
 
 Temperatures use signed 16-bit tenths and `0x8000` as unavailable. Measured airflow uses `0xffff` as unavailable. Unknown enum/boolean values decode to `None`.
 
-All public writes validate before I/O. The manual comfort temperature follows the manufacturer range **20–90 °C** in 0.5 °C steps. Temporary airflow and temporary temperature registers are intentionally **read-only** in this release: manufacturer protocols require atomic three-register activation commands at 4400–4402 and 4403–4405, so a single-register write would be incomplete.
+All public writes validate before I/O. The manual comfort temperature follows the manufacturer encoding raw **20–90** with multiplier **0.5**, therefore the physical writable range is **10–45 °C** in 0.5 °C steps. Temporary airflow and temporary temperature registers are intentionally **read-only** in this release: manufacturer protocols require atomic three-register activation commands at 4400–4402 and 4403–4405, so a single-register write would be incomplete.
 
 Special functions share holding register 4224 and are represented as one mutually exclusive enum. `bypass.disabled=False` permits automatic bypass operation; it does not force the damper open.
 

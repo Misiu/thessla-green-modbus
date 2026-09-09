@@ -6,13 +6,14 @@ Primary manufacturer references reviewed for the common register map:
 
 - Home-family protocol: https://thesslagreen.com/wp-content/uploads/MODBUS_USER_AirPack_Home_08.2021.01.pdf
 - Series-4 protocol: https://thesslagreen.com/wp-content/uploads/MODBUS_USER_AirPack_4_10.2022.01.pdf
+- Large-f protocol: https://thesslagreen.com/wp-content/uploads/MODBUS_USER_AirPack_S2_08.2021.01.pdf
 - Current product/documentation catalogue: https://thesslagreen.com/products/rekuperatory/
 
-The Home protocol covers the Home h, Home v and Home f product families. The series-4 protocol covers the corresponding h/v generation. The manufacturer's large-f product page also publishes a Modbus RTU protocol; its complete table must be compared before family-specific extensions are enabled by default.
+The Home protocol covers the Home h, Home v and Home f product families. The series-4 protocol covers the corresponding h/v generation. The large-f protocol explicitly covers AirPack 1450f/1850f and L variants.
 
 ## Verified common behaviour
 
-The reviewed Home and series-4 tables align on the core areas used by this package, including firmware/controller identity, temperatures, measured airflow, user mode/season/manual speed, special mode, bypass, enable state and the principal alarm ranges. Both impose a maximum of 16 simultaneously accessed registers and document factory serial defaults of 9600 8/N/1 with unit address 10.
+The reviewed Home, series-4 and large-f tables align on the conservative core areas used by this package, including firmware/controller identity, temperatures, measured airflow, user mode/season/manual speed, special mode, bypass, enable state and the principal alarm ranges. They impose a maximum of 16 simultaneously accessed registers and document factory serial defaults of 9600 8/N/1 with unit address 10.
 
 Important interpretations:
 
@@ -23,11 +24,11 @@ Important interpretations:
 | Coil 11 | Fan-power relay, distinct from run-confirmation coil 10 |
 | Holding 4224 | One enumerated special mode, not independent switches |
 | Holding 4320 | Bypass disable flag; zero permits automatic operation |
-| Holding 4212 | Manual comfort setpoint, 0.5 °C scale, 20–90 °C |
+| Holding 4212 | Manual comfort setpoint; raw 20-90 with multiplier 0.5, therefore physical 10-45 °C |
 | Holding 4211/4213 | Readable temporary setpoints; not directly writable here |
 | Holding 4400-4405 | Atomic temporary-mode command blocks required by the manufacturer |
-| Holding 8443 | Duct-filter replacement alarm in both reviewed generations |
-| Holding 8444 | Pressure-switch filter alarm documented for relevant Home hardware, absent from reviewed series-4 table |
+| Holding 8443 | Duct-filter replacement alarm in the reviewed tables |
+| Holding 8444 | Pressure-switch filter alarm in reviewed Home/large-f tables; absent from reviewed series-4 table |
 
 ## Scope boundaries
 
